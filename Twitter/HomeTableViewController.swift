@@ -23,8 +23,14 @@ class HomeTableViewController: UITableViewController {
         
         myRefreshControl.addTarget(self, action: #selector(pullTweets), for: .valueChanged)
         tableView.refreshControl = myRefreshControl
+//        self.tableView.rowHeight = UITableView.automaticDimension
+//        self.tableView.estimatedRowHeight = 150
     }
     
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        pullTweets()
+    }
     @objc func pullTweets() {
         
         numberOfTweets = 20
@@ -39,7 +45,7 @@ class HomeTableViewController: UITableViewController {
             self.tableView.reloadData()
             self.myRefreshControl.endRefreshing()
         }, failure: { (Error) in
-            print("Could not retrieve tweets in pullTweets()")
+            print("Could not retrieve tweets in pullTweets() :\(Error)")
         })
     }
     
@@ -58,7 +64,7 @@ class HomeTableViewController: UITableViewController {
             self.tableView.reloadData()
             
         }, failure: { (Error) in
-            print("Could not retrieve tweets in pullMoreTweets()")
+            print("Could not retrieve tweets in pullMoreTweets() :\(Error)")
         })
     }
     
@@ -86,6 +92,13 @@ class HomeTableViewController: UITableViewController {
         cell.retweetCount.text = String(tweet["retweet_count"] as! Int)
         cell.favCount.text = String(tweet["favorite_count"] as! Int)
         
+        cell.tweetId = tweet["id"] as! Int
+        cell.setFavourited(tweet["favorited"] as! Bool)
+        cell.setRetweeted(tweet["retweeted"] as! Bool)
+        
+        let date = tweetArray[indexPath.row]["created_at"] as? String
+        cell.tweetDate.text = getDate(dateString: date!)!.timeAgoSinceDate()
+        
         if let profilePhotoUrlString = user["profile_image_url_https"] as? String {
             let profilePhotoUrl = URL(string: profilePhotoUrlString)!
             cell.profilePhoto.af_setImage(withURL: profilePhotoUrl)
@@ -100,5 +113,45 @@ class HomeTableViewController: UITableViewController {
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return tweetArray.count
+    }
+    
+    func getDate(dateString: String) -> Date? {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "E MMM d HH:mm:ss Z yyyy"
+        dateFormatter.timeZone = TimeZone.current
+        dateFormatter.locale = Locale.current
+        return dateFormatter.date(from: dateString) // replace Date String
+    }
+    
+}
+
+extension Date {
+    func timeAgoSinceDate() -> String {
+        // From Time
+        let fromDate = self
+        // To Time
+        let toDate = Date()
+        // Estimation
+        // Year
+        if let interval = Calendar.current.dateComponents([.year], from: fromDate, to: toDate).year, interval > 0  {
+            return interval == 1 ? "\(interval)" + " " + "y ago" : "\(interval)" + " " + "y ago"
+        }
+        // Month
+        if let interval = Calendar.current.dateComponents([.month], from: fromDate, to: toDate).month, interval > 0  {
+            return interval == 1 ? "\(interval)" + " " + "m ago" : "\(interval)" + " " + "m ago"
+        }
+        // Day
+        if let interval = Calendar.current.dateComponents([.day], from: fromDate, to: toDate).day, interval > 0  {
+            return interval == 1 ? "\(interval)" + " " + "d ago" : "\(interval)" + " " + "d ago"
+        }
+        // Hours
+        if let interval = Calendar.current.dateComponents([.hour], from: fromDate, to: toDate).hour, interval > 0 {
+            return interval == 1 ? "\(interval)" + " " + "h ago" : "\(interval)" + " " + "h ago"
+        }
+        // Minute
+        if let interval = Calendar.current.dateComponents([.minute], from: fromDate, to: toDate).minute, interval > 0 {
+            return interval == 1 ? "\(interval)" + " " + "min ago" : "\(interval)" + " " + "min ago"
+        }
+        return "a moment ago"
     }
 }
